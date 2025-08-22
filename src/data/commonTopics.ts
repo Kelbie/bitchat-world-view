@@ -44,7 +44,7 @@ export const commonTopics = [
 // Categorized topics for better organization
 export const topicCategories = {
   'Crypto & Finance': [
-    'bitcoin', 'ethereum', 'crypto', 'lightning', 'trading', 'hodl', 'sats', 'defi'
+    'bitcoin', 'lightning', 'trading', 'hodl', 'sats', 'defi'
   ],
   'Nostr & Tech': [
     'nostr', 'relay', 'zap', 'damus', 'decentralized', 'privacy', 'open source'
