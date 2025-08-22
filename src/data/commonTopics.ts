@@ -2,7 +2,7 @@
 export const commonTopics = [
   // Cryptocurrency & Finance
   'bitcoin', 'btc', 'sats', 'lightning', 'hodl', 'mining', 'wallet',
-  'defi', 'nft', 'altcoin', 'trading', 'price', 'bull', 'bear', 'moon', 'dip', 'pump',
+  'nft', 'altcoin', 'trading', 'price', 'bull', 'bear', 'moon', 'dip', 'pump',
   
   // Nostr & Decentralization
   'nostr', 'relay', 'zap', 'npub', 'nsec', 'client', 'damus', 'iris', 'amethyst', 'primal',
