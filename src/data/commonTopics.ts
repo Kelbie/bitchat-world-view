@@ -1,7 +1,7 @@
 // Common topics that might be discussed in Nostr chat
 export const commonTopics = [
   // Cryptocurrency & Finance
-  'bitcoin', 'btc', 'ethereum', 'eth', 'crypto', 'sats', 'lightning', 'hodl', 'mining', 'wallet',
+  'bitcoin', 'btc', 'sats', 'lightning', 'hodl', 'mining', 'wallet',
   'defi', 'nft', 'altcoin', 'trading', 'price', 'bull', 'bear', 'moon', 'dip', 'pump',
   
   // Nostr & Decentralization
