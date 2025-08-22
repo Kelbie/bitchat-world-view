@@ -61,44 +61,73 @@ interface Chatroom {
 interface LeafletMapProps {
   chatrooms: Chatroom[];
   onChatroomClick?: (geohash: string) => void;
+  searchTopic?: string;
+  topicHotspots?: Array<{
+    geohash: string;
+    lat: number;
+    lng: number;
+    mentions: number;
+    totalMessages: number;
+  }>;
 }
 
 // Custom icon for chatrooms
-function createChatroomIcon(messageCount: number) {
+function createChatroomIcon(messageCount: number, isHotspot = false, mentions = 0) {
   const size = Math.max(20, Math.min(40, 20 + messageCount / 5));
+  const hotspotSize = isHotspot ? Math.max(25, Math.min(50, 25 + mentions * 2)) : size;
+  const finalSize = isHotspot ? hotspotSize : size;
+  const color = isHotspot ? '#ef4444' : '#10b981';
+  const borderColor = isHotspot ? '#dc2626' : '#059669';
 
   return L.divIcon({
     className: "custom-chatroom-icon",
     html: `
       <div style="
-        width: ${size}px;
-        height: ${size}px;
-        background: #10b981;
-        border: 2px solid #059669;
+        width: ${finalSize}px;
+        height: ${finalSize}px;
+        background: ${color};
+        border: 2px solid ${borderColor};
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
         font-weight: bold;
-        font-size: ${Math.max(10, size / 3)}px;
+        font-size: ${Math.max(10, finalSize / 3)}px;
         cursor: pointer;
         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        ${isHotspot ? 'animation: pulse 2s infinite;' : ''}
       ">
-        ${messageCount}
+        ${isHotspot ? mentions : messageCount}
       </div>
     `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconSize: [finalSize, finalSize],
+    iconAnchor: [finalSize / 2, finalSize / 2],
   });
 }
 
 export default function LeafletMap({
   chatrooms,
   onChatroomClick,
+  searchTopic,
+  topicHotspots,
 }: LeafletMapProps) {
   // Decode geohashes to coordinates
   const mapPoints = useMemo(() => {
+    // If we have topic hotspots, use those instead of regular chatrooms
+    if (searchTopic && topicHotspots && topicHotspots.length > 0) {
+      return topicHotspots.map(hotspot => ({
+        geohash: hotspot.geohash,
+        name: `#${hotspot.geohash}`,
+        messageCount: hotspot.totalMessages,
+        lat: hotspot.lat,
+        lng: hotspot.lng,
+        mentions: hotspot.mentions,
+        isHotspot: true,
+      }));
+    }
+
+    // Regular chatroom display
     return chatrooms
       .map((room) => {
         const coords = decodeGeohash(room.geohash);
@@ -108,10 +137,11 @@ export default function LeafletMap({
           ...room,
           lat: coords.lat,
           lng: coords.lng,
+          isHotspot: false,
         };
       })
       .filter((point): point is NonNullable<typeof point> => point !== null);
-  }, [chatrooms]);
+  }, [chatrooms, searchTopic, topicHotspots]);
 
   // Calculate map center based on points
   const mapCenter = useMemo(() => {
@@ -140,9 +170,17 @@ export default function LeafletMap({
           <div className="flex items-center justify-center h-full text-gray-400">
             <div className="text-center">
               <div className="text-2xl mb-2">🌍</div>
-              <div>No chatrooms found yet</div>
+              <div>
+                {searchTopic 
+                  ? `No locations discussing "${searchTopic}" found`
+                  : 'No chatrooms found yet'
+                }
+              </div>
               <div className="text-sm">
-                Waiting for kind 20000 events with geohash tags...
+                {searchTopic 
+                  ? 'Try a different search term or wait for more messages'
+                  : 'Waiting for kind 20000 events with geohash tags...'
+                }
               </div>
             </div>
           </div>
@@ -162,7 +200,11 @@ export default function LeafletMap({
               <Marker
                 key={point.geohash}
                 position={[point.lat, point.lng]}
-                icon={createChatroomIcon(point.messageCount)}
+                icon={createChatroomIcon(
+                  point.messageCount, 
+                  point.isHotspot, 
+                  point.mentions
+                )}
                 eventHandlers={{
                   click: () => onChatroomClick?.(point.geohash),
                 }}
@@ -172,6 +214,11 @@ export default function LeafletMap({
                     <div className="font-bold text-green-600">
                       #{point.geohash}
                     </div>
+                    {point.isHotspot && searchTopic && (
+                      <div className="text-sm text-red-400 font-semibold">
+                        "{searchTopic}": {point.mentions} mentions
+                      </div>
+                    )}
                     <div className="text-sm text-gray-600">
                       {point.messageCount} messages
                     </div>
@@ -190,11 +237,20 @@ export default function LeafletMap({
       </div>
 
       <div className="mt-4 text-sm text-gray-400">
-        <p>• Green circles represent chatrooms</p>
-        <p>• Circle size indicates message activity</p>
-        <p>• Numbers show message count</p>
+        {searchTopic ? (
+          <>
+            <p>• <span className="text-red-400">Red circles</span> show hotspots for "{searchTopic}"</p>
+            <p>• Circle size indicates mention frequency</p>
+            <p>• Numbers show mention count</p>
+          </>
+        ) : (
+          <>
+            <p>• Green circles represent chatrooms</p>
+            <p>• Circle size indicates message activity</p>
+            <p>• Numbers show message count</p>
+          </>
+        )}
         <p>• Click circles to filter by location</p>
-        <p>• Drag to pan • Scroll to zoom • Use popups for details</p>
       </div>
     </div>
   );

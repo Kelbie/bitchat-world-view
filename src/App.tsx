@@ -151,6 +151,7 @@ export default function App() {
     return (
       <MapView
         chatrooms={chatrooms}
+        events={events}
         onChatroomSelect={(geohash) => {
           setSelectedChatroom(geohash);
           setCurrentView('chat');
