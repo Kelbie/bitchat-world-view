@@ -70,6 +70,37 @@ export default function MapView({
   const [searchTopic, setSearchTopic] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
 
+  // Get all mentions for the active search
+  const allMentions = useMemo(() => {
+    if (!activeSearch || !events.length) return [];
+
+    const searchLower = activeSearch.toLowerCase();
+    const mentions: Array<{
+      event: NostrEvent;
+      geohash: string;
+      mentionCount: number;
+      timestamp: number;
+    }> = [];
+
+    events.forEach(event => {
+      const geohash = getTagValue(event, "g");
+      const content = event.content?.toLowerCase() || '';
+      
+      if (geohash && content.includes(searchLower)) {
+        const mentionCount = (content.match(new RegExp(searchLower, 'g')) || []).length;
+        mentions.push({
+          event,
+          geohash,
+          mentionCount,
+          timestamp: event.created_at
+        });
+      }
+    });
+
+    // Sort by timestamp (newest first)
+    return mentions.sort((a, b) => b.timestamp - a.timestamp);
+  }, [activeSearch, events]);
+
   // Calculate topic hotspots based on search
   const topicHotspots = useMemo(() => {
     if (!activeSearch || !events.length) return [];
@@ -191,6 +222,55 @@ export default function MapView({
               <span className="text-gray-400 ml-2">
                 ({topicHotspots.reduce((sum, h) => sum + h.mentions, 0)} total mentions found)
               </span>
+              
+              {/* Mentions List */}
+              {allMentions.length > 0 && (
+                <div className="mt-4 bg-gray-800 rounded-lg p-4 max-h-64 overflow-y-auto">
+                  <h4 className="text-green-300 font-semibold mb-3">
+                    All Mentions ({allMentions.length} messages):
+                  </h4>
+                  <div className="space-y-2">
+                    {allMentions.map((mention, index) => {
+                      const nickname = getTagValue(mention.event, "n") || `${mention.event.pubkey?.slice(0, 8)}…`;
+                      const time = new Date(mention.timestamp * 1000).toLocaleTimeString([], { 
+                        hour: "2-digit", 
+                        minute: "2-digit" 
+                      });
+                      
+                      // Highlight the search term in the content
+                      const highlightedContent = mention.event.content.replace(
+                        new RegExp(`(${activeSearch})`, 'gi'),
+                        '<mark class="bg-yellow-400 text-black px-1 rounded">$1</mark>'
+                      );
+                      
+                      return (
+                        <div key={`${mention.event.id}-${index}`} className="text-xs border-l-2 border-green-500 pl-3 py-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-gray-400">[{time}]</span>
+                            <span className="text-cyan-300">&lt;{nickname}&gt;</span>
+                            <span className="text-fuchsia-300">#{mention.geohash}</span>
+                            {mention.mentionCount > 1 && (
+                              <span className="text-yellow-400 text-xs">
+                                ({mention.mentionCount}x)
+                              </span>
+                            )}
+                            <button
+                              onClick={() => onChatroomSelect(mention.geohash)}
+                              className="text-blue-400 hover:text-blue-300 text-xs underline ml-auto"
+                            >
+                              View Location
+                            </button>
+                          </div>
+                          <div 
+                            className="text-gray-200 break-words"
+                            dangerouslySetInnerHTML={{ __html: highlightedContent }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
