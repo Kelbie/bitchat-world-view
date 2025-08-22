@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import LeafletMap from '../components/LeafletMap';
 import { getTagValue } from '../lib/applesauce';
+import { topicCategories } from '../data/commonTopics';
 
 interface Chatroom {
   geohash: string;
@@ -184,6 +185,38 @@ export default function MapView({
           <p className="text-gray-300 text-sm mb-4">
             Search for topics to see where they're being discussed most. Enter any word or phrase to find geographic hotspots.
           </p>
+          
+          {/* Quick Topic Buttons */}
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-gray-300 mb-2">Quick Topics:</h3>
+            <div className="space-y-2">
+              {Object.entries(topicCategories).map(([category, topics]) => (
+                <div key={category} className="flex flex-wrap gap-1 items-center">
+                  <span className="text-xs text-gray-400 font-medium mr-2 min-w-fit">
+                    {category}:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {topics.map((topic) => (
+                      <button
+                        key={topic}
+                        onClick={() => {
+                          setSearchTopic(topic);
+                          setActiveSearch(topic);
+                        }}
+                        className={`px-2 py-1 rounded text-xs transition-colors ${
+                          activeSearch === topic
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        {topic}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
